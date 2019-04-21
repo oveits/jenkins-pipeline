@@ -93,7 +93,8 @@ def containerBuildPub(Map args) {
 
     println "Running Docker build/publish: ${args.host}/${args.acct}/${args.repo}:${args.tags}"
 
-    withDockerRegistry([ credentialsId: args.auth_id, url: "https://${args.host}" ]) {
+    //withDockerRegistry([ credentialsId: args.auth_id, url: "https://${args.host}" ]) {
+    withDockerRegistry([ credentialsId: args.auth_id, url: "" ]) {
     //docker.withRegistry("https://${args.host}", "${args.auth_id}") {
 
         // def img = docker.build("${args.acct}/${args.repo}", args.dockerfile)
