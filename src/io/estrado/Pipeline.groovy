@@ -97,6 +97,12 @@ def containerBuildPub(Map args) {
     //withDockerRegistry([ credentialsId: args.auth_id, url: "" ]) {
     docker.withRegistry("https://${args.host}", "${args.auth_id}") {
         sh "echo https://${args.host}"
+
+        withCredentials([[$class          : 'UsernamePasswordMultiBinding', credentialsId: config.container_repo.jenkins_creds_id,
+                usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+          sh "echo ${env.PASSWORD} | docker login -u ${env.USERNAME} --password-stdin ${config.container_repo.host}"
+        }
+
     
 
         // def img = docker.build("${args.acct}/${args.repo}", args.dockerfile)
