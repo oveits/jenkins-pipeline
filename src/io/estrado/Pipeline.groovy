@@ -93,24 +93,16 @@ def containerBuildPub(Map args) {
 
     println "Running Docker build/publish: ${args.host}/${args.acct}/${args.repo}:${args.tags}"
 
-    //withDockerRegistry([ credentialsId: args.auth_id, url: "https://${args.host}" ]) {
-    //withDockerRegistry([ credentialsId: args.auth_id, url: "" ]) {
-    docker.withRegistry("https://${args.host}", "${args.auth_id}") {
-        sh "echo https://${args.host}"
+    //docker.withRegistry("https://${args.host}", "${args.auth_id}") {
 
         withCredentials([[$class          : 'UsernamePasswordMultiBinding', credentialsId: args.auth_id,
                 usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
           sh "echo ${env.PASSWORD} | docker login -u ${env.USERNAME} --password-stdin ${args.host}"
         }
 
-    
-
-        // def img = docker.build("${args.acct}/${args.repo}", args.dockerfile)
         def img = docker.image("${args.host}/${args.acct}/${args.repo}")
-        //def img = docker.image("${args.acct}/${args.repo}")
-        //img.push()
+
         sh "docker build --build-arg VCS_REF=${env.GIT_SHA} --build-arg BUILD_DATE=`date -u +'%Y-%m-%dT%H:%M:%SZ'` -t ${args.host}/${args.acct}/${args.repo} ${args.dockerfile}"
-        //sh "docker push ${args.host}/${args.acct}/${args.repo}"
 
         for (int i = 0; i < args.tags.size(); i++) {
             sh "docker tag ${args.host}/${args.acct}/${args.repo} ${args.host}/${args.acct}/${args.repo}:${args.tags.get(i)}"
@@ -119,7 +111,7 @@ def containerBuildPub(Map args) {
         }
 
         return img.id
-    }
+    //}
 }
 
 def getContainerTags(config, Map tags = [:]) {
