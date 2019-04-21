@@ -98,9 +98,9 @@ def containerBuildPub(Map args) {
     docker.withRegistry("https://${args.host}", "${args.auth_id}") {
         sh "echo https://${args.host}"
 
-        withCredentials([[$class          : 'UsernamePasswordMultiBinding', credentialsId: config.container_repo.jenkins_creds_id,
+        withCredentials([[$class          : 'UsernamePasswordMultiBinding', credentialsId: args.auth_id,
                 usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-          sh "echo ${env.PASSWORD} | docker login -u ${env.USERNAME} --password-stdin ${config.container_repo.host}"
+          sh "echo ${env.PASSWORD} | docker login -u ${env.USERNAME} --password-stdin ${args.host}"
         }
 
     
