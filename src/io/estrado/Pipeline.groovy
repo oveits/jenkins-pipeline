@@ -217,3 +217,15 @@ def String getSubDomainName(String domain) {
 def String getSubDomainNameFromURL(String url) {
     return getSubDomainName(getDomainName(url));
 }
+
+def setConfiguration (String configuration, String environment, String dValue ){
+  if(configuration != null){
+    return configuration
+  }
+
+  if(environment != null){
+    return environment
+  }
+
+  return dValue
+}
