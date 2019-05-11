@@ -73,8 +73,8 @@ def helmStatus(Map args) {
     echo helmStatusText
 
     if(helmStatusText != null && helmStatusText != "") {
-        // def helmStatus = readJSON text: helmStatusText
-        return (readJSON text: helmStatusText)
+        def helmStatus = readJSON text: helmStatusText
+        return helmStatus
     }
     // else
     return null
