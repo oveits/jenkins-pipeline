@@ -67,6 +67,17 @@ def helmTest(Map args) {
     sh "helm test ${args.name} --cleanup"
 }
 
+def helmStatusJson(Map args) {
+    // get helm status
+    helmStatusText = sh script: "helm status ${args.name} -o json || true", returnStdout: true
+    echo helmStatusText
+    if(helmStatusText != null && helmStatusText != "") {
+        return readJSON text: helmStatusText
+    }
+    // else
+    return null
+}
+
 def gitEnvVars() {
     // create git envvars
     println "Setting envvars to tag container"
