@@ -67,18 +67,40 @@ def helmTest(Map args) {
     sh "helm test ${args.name} --cleanup"
 }
 
-def helmStatus(Map args) {
-    // get helm status
-    def helmStatusText = sh script: "helm status ${args.name} -o json || true", returnStdout: true
-    echo helmStatusText
+def objectFromJsonFromShScript(Map args) {
+    def jsonText = sh script: args.script, returnStdout: true
+    echo jsonText
 
-    if(helmStatusText != null && helmStatusText != "") {
-        def helmStatus = readJSON text: helmStatusText
-        return helmStatus
+    if(jsonText != null && jsonText != "") {
+        def jsonObject = readJSON text: jsonText
+        return jsonObject
     }
     // else
     return null
 }
+
+def helmList() {
+    String shScript = "helm ls --output json || true"
+    return objectFromJsonFromShScript(script: shScript)
+}
+
+def helmStatus(Map args) {
+    String shScript = "helm status ${args.name} -o json || true"
+    return objectFromJsonFromShScript(script: shScript)
+}
+
+// def helmStatus(Map args) {
+//     // get helm status
+//     def helmStatusText = sh script: "helm status ${args.name} -o json || true", returnStdout: true
+//     echo helmStatusText
+
+//     if(helmStatusText != null && helmStatusText != "") {
+//         def helmStatus = readJSON text: helmStatusText
+//         return helmStatus
+//     }
+//     // else
+//     return null
+// }
 
 def gitEnvVars() {
     // create git envvars
