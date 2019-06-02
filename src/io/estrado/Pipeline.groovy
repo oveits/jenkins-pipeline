@@ -44,45 +44,19 @@ def enrichConfiguration(Map configuration) {
     configuration.seleniumRelease       = configuration.sharedSelenium == true      ?    'selenium'   : (configuration.appRelease + '-selenium')
     configuration.seleniumNamespace     = configuration.sharedSelenium == true      ?    'selenium'   : configuration.appNamespace
 
-    // // set additional git envvars for image tagging
-    // pipeline.gitEnvVars()
+    // set additional git envvars for image tagging
+    gitEnvVars()
 
-    // // If pipeline debugging enabled
-    // if (configuration.debug.envVars) {
-    //     println "DEBUGGING of ENV VARS ENABLED"
-    //     sh "env | sort"
+    // If pipeline debugging enabled
+    if (configuration.debug.envVars) {
+        println "DEBUGGING of ENV VARS ENABLED"
+        sh "env | sort"
+    }
 
-    //     println "Runing kubectl/helm tests"
-    //     container('kubectl') {
-    //         pipeline.kubectlTest()
-    //     }
-    //     container('helm') {
-    //         pipeline.helmConfig()
-    //     }
-    // }
-
-    // // configuration.acct = pipeline.getContainerRepoAcct(config)
-    // configuration.acct = pipeline.getContainerRepoAcct(configuration)
-    // // // tag image with version, and branch-commit_id
-    // // image_tags_map = pipeline.getContainerTags(config)
-
-    // // compile tag list
-    // // configuration.image_tags_list = pipeline.getMapValues(pipeline.getContainerTags(config))
-    // configuration.image_tags_list = pipeline.getMapValues(pipeline.getContainerTags(configuration))
+    configuration.acct                  = getContainerRepoAcct(configuration)
+    configuration.image_tags_list       = getMapValues(getContainerTags(configuration))
 
     echo "configuration.image_tags_list = ${configuration.image_tags_list}"
-
-    // prepare deployment variables
-    configuration.testSeleniumHubUrl = "http://${configuration.seleniumRelease}-selenium-hub.${configuration.seleniumNamespace}.svc.cluster.local:4444/wd/hub"
-    if(env.BRANCH_NAME ==~ /prod/) {
-        configuration.ingressEnabled = true
-        configuration.ingressHostname = configuration.app.hostname
-        configuration.testIngressHostname = configuration.app.hostname
-    } else {
-        configuration.ingressEnabled = false
-        configuration.ingressHostname = ""
-        configuration.testIngressHostname = "${configuration.appRelease}-croc-hunter.${configuration.appNamespace}.svc.cluster.local"
-    }
 
 }
 
