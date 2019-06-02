@@ -1,6 +1,92 @@
 #!/usr/bin/groovy
 package io.estrado;
 
+def enrichConfiguration(Map configuration) {
+    // DEFAULTS
+    configuration.alwaysPerformTests      = configuration.alwaysPerformTests != null     ?    configuration.alwaysPerformTests       : (env.getProperty('ALWAYS_PERFORM_TESTS')         != null ? (env.getProperty('ALWAYS_PERFORM_TESTS')         == "true" ? true : false) : false)
+    configuration.debugPipeline           = configuration.debugPipeline != null          ?    configuration.debugPipeline            : (env.getProperty('DEBUG_PIPELINE')               != null ? (env.getProperty('DEBUG_PIPELINE')               == "true" ? true : false) : false)
+    configuration.sharedSelenium          = configuration.sharedSelenium != null         ?    configuration.sharedSelenium           : (env.getProperty('SHARED_SELENIUM')              != null ? (env.getProperty('SHARED_SELENIUM')              == "true" ? true : false) : false)
+    // configuration.seleniumRelease:     will be set further below
+    // configuration.seleniumNamespace:   will be set further below
+    configuration.skipRemoveAppIfNotProd  = configuration.skipRemoveAppIfNotProd != null  ?    configuration.skipRemoveAppIfNotProd  : (env.getProperty('SKIP_REMOVE_APP_IF_NOT_PROD')  != null ? (env.getProperty('SKIP_REMOVE_APP_IF_NOT_PROD')  == "true" ? true : false) : false)
+    configuration.skipRemoveTestPods      = configuration.skipRemoveTestPods != null      ?    configuration.skipRemoveTestPods      : (env.getProperty('SKIP_REMOVE_TEST_PODS')        != null ? (env.getProperty('SKIP_REMOVE_TEST_PODS')        == "true" ? true : false) : false)
+    configuration.showHelmTestLogs        = configuration.showHelmTestLogs != null        ?    configuration.showHelmTestLogs        : (env.getProperty('SHOW_HELM_TEST_LOGS')          != null ? (env.getProperty('SHOW_HELM_TEST_LOGS')          == "true" ? true : false) : true)
+    configuration.debug                   = configuration.debug != null                   ?    configuration.debug                   : [:]
+    configuration.debug.helmStatus        = configuration.debug.helmStatus != null        ?    configuration.debug.helmStatus        : (env.getProperty('DEBUG_HELM_STATUS')            != null ? (env.getProperty('DEBUG_HELM_STATUS')            == "true" ? true : false) : false)
+    configuration.debug.envVars           = configuration.debug.envVars != null           ?    configuration.debug.envVars           : (env.getProperty('DEBUG_ENV_VARS')               != null ? (env.getProperty('DEBUG_ENV_VARS')            == "true" ? true : false) : false)
+    configuration.helmTestRetry           = configuration.helmTestRetry != null           ?    configuration.helmTestRetry           : (env.getProperty('HELM_TEST_RETRY')              != null ? env.getProperty('HELM_TEST_RETRY').toInteger()                        : 0)
+
+    // set commitTag
+    String gitRevParseHead = sh script: 'git rev-parse HEAD', returnStdout: true
+    configuration.commitTag = gitRevParseHead.substring(0, 7).trim()
+    echo "commitTag = ${configuration.commitTag}"      
+
+    // set branchNameNormalized:
+    // - replaces '/' by '-' 
+    // - shortens branch name, if needed. In that case, add a 6 Byte hash
+    configuration.branchNameNormalized = env.BRANCH_NAME.toLowerCase().replaceAll('/','-')
+    if (configuration.branchNameNormalized.length() > 30) {
+        String digest = sh script: "echo ${env.BRANCH_NAME} | md5sum | cut -c1-6 | tr -d '\\n' | tr -d '\\r'", returnStdout: true
+        configuration.branchNameNormalized = configuration.branchNameNormalized.take(24) + '-' + digest
+        if (configuration.pipeline.debug) {
+            echo "digest = ${digest}"
+        }
+    }
+    echo "configuration.branchNameNormalized = ${configuration.branchNameNormalized}"
+    // configuration.branchNameNormalized = branchNameNormalized
+
+    // set appRelease:
+    configuration.appRelease    = env.BRANCH_NAME == "prod" ? configuration.app.name : configuration.branchNameNormalized
+    configuration.appNamespace  = env.BRANCH_NAME == "prod" ? configuration.app.name : configuration.branchNameNormalized
+    configuration.skipRemoveApp = env.BRANCH_NAME == "prod" ? true                   : configuration.skipRemoveAppIfNotProd
+
+    // Set Selenium configuration
+    configuration.seleniumRelease       = configuration.sharedSelenium == true      ?    'selenium'   : (configuration.appRelease + '-selenium')
+    configuration.seleniumNamespace     = configuration.sharedSelenium == true      ?    'selenium'   : configuration.appNamespace
+
+    // // set additional git envvars for image tagging
+    // pipeline.gitEnvVars()
+
+    // // If pipeline debugging enabled
+    // if (configuration.debug.envVars) {
+    //     println "DEBUGGING of ENV VARS ENABLED"
+    //     sh "env | sort"
+
+    //     println "Runing kubectl/helm tests"
+    //     container('kubectl') {
+    //         pipeline.kubectlTest()
+    //     }
+    //     container('helm') {
+    //         pipeline.helmConfig()
+    //     }
+    // }
+
+    // // configuration.acct = pipeline.getContainerRepoAcct(config)
+    // configuration.acct = pipeline.getContainerRepoAcct(configuration)
+    // // // tag image with version, and branch-commit_id
+    // // image_tags_map = pipeline.getContainerTags(config)
+
+    // // compile tag list
+    // // configuration.image_tags_list = pipeline.getMapValues(pipeline.getContainerTags(config))
+    // configuration.image_tags_list = pipeline.getMapValues(pipeline.getContainerTags(configuration))
+
+    echo "configuration.image_tags_list = ${configuration.image_tags_list}"
+
+    // prepare deployment variables
+    configuration.testSeleniumHubUrl = "http://${configuration.seleniumRelease}-selenium-hub.${configuration.seleniumNamespace}.svc.cluster.local:4444/wd/hub"
+    if(env.BRANCH_NAME ==~ /prod/) {
+        configuration.ingressEnabled = true
+        configuration.ingressHostname = configuration.app.hostname
+        configuration.testIngressHostname = configuration.app.hostname
+    } else {
+        configuration.ingressEnabled = false
+        configuration.ingressHostname = ""
+        configuration.testIngressHostname = "${configuration.appRelease}-croc-hunter.${configuration.appNamespace}.svc.cluster.local"
+    }
+}
+
+}
+
 def kubectlTest() {
     // Test that kubectl can correctly communication with the Kubernetes API
     println "checking kubectl connnectivity to the API"
