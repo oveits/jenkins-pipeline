@@ -82,6 +82,17 @@ def helmInit() {
     sh "helm version"
 }
 
+def helmDebugInContainers(appRelease, appNamespace) {
+    container('helm') {
+        helmStatus = pipeline.helmStatus(
+            name    : appRelease
+        )
+    }
+    container('kubectl') {
+        sh "kubectl -n ${appNamespace} get all || true"
+    }
+}
+
 
 def helmDeploy(Map args) {
     //configure helm client and confirm tiller process is installed
