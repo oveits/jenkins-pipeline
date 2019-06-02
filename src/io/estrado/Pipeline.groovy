@@ -83,7 +83,6 @@ def enrichConfiguration(Map configuration) {
         configuration.ingressHostname = ""
         configuration.testIngressHostname = "${configuration.appRelease}-croc-hunter.${configuration.appNamespace}.svc.cluster.local"
     }
-}
 
 }
 
