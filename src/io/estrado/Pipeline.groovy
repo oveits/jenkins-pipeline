@@ -62,13 +62,16 @@ def enrichConfiguration(Map configuration) {
 
     switch(configuration.programmingLanguage) {
         case /go/:
-            configuration.unitTestCommand = "go test -v -race ./..."
-            configuration.buildCommand    = "make bootstrap build"
+            configuration.unitTestCommandDefault = "go test -v -race ./..."
+            configuration.buildCommandDefault    = "make bootstrap build"
         break
         default:
-            configuration.unitTestCommand = "unitTest: unsupported programmingLanguage"
-            configuration.buildCommand    = "build: unsupported programmingLanguage"
+            configuration.unitTestCommandDefault = "unitTest: unsupported programmingLanguage"
+            configuration.buildCommandDefault    = "build: unsupported programmingLanguage"
     }
+
+    configuration.unitTestCommand   = configuration.unitTestCommand != null     ?    configuration.unitTestCommand       : configuration.unitTestCommandDefault
+    configuration.buildCommand      = configuration.buildCommand    != null     ?    configuration.buildCommand          : configuration.buildCommandDefault
 
 }
 
