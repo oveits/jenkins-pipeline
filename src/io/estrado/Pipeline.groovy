@@ -3,6 +3,7 @@ package io.estrado;
 
 def enrichConfiguration(Map configuration) {
     // DEFAULTS
+    configuration.app                     = configuration.app != null                    ?    configuration.app                      : [:]
     configuration.alwaysPerformTests      = configuration.alwaysPerformTests != null     ?    configuration.alwaysPerformTests       : (env.getProperty('ALWAYS_PERFORM_TESTS')         != null ? (env.getProperty('ALWAYS_PERFORM_TESTS')         == "true" ? true : false) : false)
     configuration.debugPipeline           = configuration.debugPipeline != null          ?    configuration.debugPipeline            : (env.getProperty('DEBUG_PIPELINE')               != null ? (env.getProperty('DEBUG_PIPELINE')               == "true" ? true : false) : false)
     configuration.sharedSelenium          = configuration.sharedSelenium != null         ?    configuration.sharedSelenium           : (env.getProperty('SHARED_SELENIUM')              != null ? (env.getProperty('SHARED_SELENIUM')              == "true" ? true : false) : false)
@@ -58,7 +59,6 @@ def enrichConfiguration(Map configuration) {
 
     echo "configuration.image_tags_list = ${configuration.image_tags_list}"
 
-    configuration.app                       = configuration.app                 != null     ?    configuration.app                       : [:]
     configuration.app.programmingLanguage   = configuration.app.programmingLanguage != null     ?    configuration.app.programmingLanguage       : (env.getProperty('PROGRAMMING_LANGUAGE')         != null ? env.getProperty('PROGRAMMING_LANGUAGE') : "programming_language_not_found")
 
     switch(configuration.app.programmingLanguage) {
