@@ -61,7 +61,7 @@ def enrichConfiguration(Map configuration) {
     configuration.programmingLanguage   = configuration.programmingLanguage != null     ?    configuration.programmingLanguage       : (env.getProperty('PROGRAMMING_LANGUAGE')         != null ? env.getProperty('PROGRAMMING_LANGUAGE') : "programming_language_not_found")
 
     switch(configuration.programmingLanguage) {
-        case /golang/:
+        case ~/golang/:
             configuration.unitTestCommandDefault = "go test -v -race ./..."
             configuration.buildCommandDefault    = "make bootstrap build"
         break
