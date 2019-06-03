@@ -58,6 +58,18 @@ def enrichConfiguration(Map configuration) {
 
     echo "configuration.image_tags_list = ${configuration.image_tags_list}"
 
+    configuration.programmingLanguage   = configuration.programmingLanguage != null     ?    configuration.programmingLanguage       : (env.getProperty('PROGRAMMING_LANGUAGE')         != null ? env.getProperty('PROGRAMMING_LANGUAGE') : "programming_language_not_found")
+
+    switch(configuration.programmingLanguage) {
+        case /go/:
+            configuration.unitTestCommand = "go test -v -race ./..."
+            configuration.buildCommand    = "make bootstrap build"
+        break
+        default:
+            configuration.unitTestCommand = "unitTest: unsupported programmingLanguage"
+            configuration.buildCommand    = "build: unsupported programmingLanguage"
+    }
+
 }
 
 def kubectlTest() {
