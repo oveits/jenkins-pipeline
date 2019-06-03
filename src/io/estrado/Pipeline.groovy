@@ -58,9 +58,10 @@ def enrichConfiguration(Map configuration) {
 
     echo "configuration.image_tags_list = ${configuration.image_tags_list}"
 
-    configuration.programmingLanguage   = configuration.programmingLanguage != null     ?    configuration.programmingLanguage       : (env.getProperty('PROGRAMMING_LANGUAGE')         != null ? env.getProperty('PROGRAMMING_LANGUAGE') : "programming_language_not_found")
+    configuration.app                       = configuration.app                 != null     ?    configuration.app                       : [:]
+    configuration.app.programmingLanguage   = configuration.app.programmingLanguage != null     ?    configuration.app.programmingLanguage       : (env.getProperty('PROGRAMMING_LANGUAGE')         != null ? env.getProperty('PROGRAMMING_LANGUAGE') : "programming_language_not_found")
 
-    switch(configuration.programmingLanguage) {
+    switch(configuration.app.programmingLanguage) {
         case ~/golang/:
             configuration.unitTestCommandDefault = "go test -v -race ./..."
             configuration.buildCommandDefault    = "make bootstrap build"
