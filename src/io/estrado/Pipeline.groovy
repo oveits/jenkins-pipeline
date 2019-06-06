@@ -2,39 +2,79 @@
 package io.estrado;
 
 def enrichConfiguration(Map configuration) {
+
+    def normalizeName (Map args) {
+        if(args == null || args.name == null || args.name == "") {
+            error "normalizeBranch(name:null) called?"
+        }
+        if(args.maxLength == null) {
+            args.maxLength = 30
+        }
+        if(args.digestLength == null) {
+            args.digestLength = 6
+        }
+        String normalizedBranch = args.name.toLowerCase().replaceAll('/','-')
+        if (normalizedBranch.length() > args.maxLength) {
+            String digest = sh script: "echo ${args.name} | md5sum | cut -c1-${args.digestLength} | tr -d '\\n' | tr -d '\\r'", returnStdout: true
+            normalizedBranch = normalizedBranch.take(args.maxLength - args.digestLength) + '-' + digest
+            if (configuration && configuration.pipeline && configuration.pipeline.debug) {
+                echo "digest = ${digest}"
+            }
+        }
+        return normalizedBranch
+    }
+
+    def getGitCommitSha(Map args) {
+        if (args == null || args.length == null) {
+            args.length = 7
+        }
+        String gitRevParseHead = sh script: 'git rev-parse HEAD', returnStdout: true
+        if(args.length && args.length > 0 && args.length < gitRevParseHead.length()) {
+            gitRevParseHead = gitRevParseHead.substring(0, args.length).trim()
+        } else {
+            gitRevParseHead = gitRevParseHead.trim()
+        }
+        return gitRevParseHead
+    }
+
     // DEFAULTS
     configuration.app                     = configuration.app != null                    ?    configuration.app                      : [:]
     configuration.alwaysPerformTests      = configuration.alwaysPerformTests != null     ?    configuration.alwaysPerformTests       : (env.getProperty('ALWAYS_PERFORM_TESTS')         != null ? (env.getProperty('ALWAYS_PERFORM_TESTS')         == "true" ? true : false) : false)
-    configuration.debugPipeline           = configuration.debugPipeline != null          ?    configuration.debugPipeline            : (env.getProperty('DEBUG_PIPELINE')               != null ? (env.getProperty('DEBUG_PIPELINE')               == "true" ? true : false) : false)
-    configuration.sharedSelenium          = configuration.sharedSelenium != null         ?    configuration.sharedSelenium           : (env.getProperty('SHARED_SELENIUM')              != null ? (env.getProperty('SHARED_SELENIUM')              == "true" ? true : false) : false)
-    // configuration.seleniumRelease:     will be set further below
-    // configuration.seleniumNamespace:   will be set further below
-    configuration.skipRemoveAppIfNotProd  = configuration.skipRemoveAppIfNotProd != null  ?    configuration.skipRemoveAppIfNotProd  : (env.getProperty('SKIP_REMOVE_APP_IF_NOT_PROD')  != null ? (env.getProperty('SKIP_REMOVE_APP_IF_NOT_PROD')  == "true" ? true : false) : false)
-    configuration.skipRemoveTestPods      = configuration.skipRemoveTestPods != null      ?    configuration.skipRemoveTestPods      : (env.getProperty('SKIP_REMOVE_TEST_PODS')        != null ? (env.getProperty('SKIP_REMOVE_TEST_PODS')        == "true" ? true : false) : false)
-    configuration.showHelmTestLogs        = configuration.showHelmTestLogs != null        ?    configuration.showHelmTestLogs        : (env.getProperty('SHOW_HELM_TEST_LOGS')          != null ? (env.getProperty('SHOW_HELM_TEST_LOGS')          == "true" ? true : false) : true)
+    
+    configuration.branchNameNormalized    = normalizeName(name:env.BRANCH_NAME, maxLength:30, digestLength:6)
+    
+    configuration.commitTag               = getGitCommitSha(length:7)
+
     configuration.debug                   = configuration.debug != null                   ?    configuration.debug                   : [:]
     configuration.debug.helmStatus        = configuration.debug.helmStatus != null        ?    configuration.debug.helmStatus        : (env.getProperty('DEBUG_HELM_STATUS')            != null ? (env.getProperty('DEBUG_HELM_STATUS')            == "true" ? true : false) : false)
     configuration.debug.envVars           = configuration.debug.envVars != null           ?    configuration.debug.envVars           : (env.getProperty('DEBUG_ENV_VARS')               != null ? (env.getProperty('DEBUG_ENV_VARS')            == "true" ? true : false) : false)
+    configuration.debugPipeline           = configuration.debugPipeline != null           ?    configuration.debugPipeline           : (env.getProperty('DEBUG_PIPELINE')               != null ? (env.getProperty('DEBUG_PIPELINE')               == "true" ? true : false) : false)
+    
     configuration.helmTestRetry           = configuration.helmTestRetry != null           ?    configuration.helmTestRetry           : (env.getProperty('HELM_TEST_RETRY')              != null ? env.getProperty('HELM_TEST_RETRY').toInteger()                        : 0)
 
-    // set commitTag
-    String gitRevParseHead = sh script: 'git rev-parse HEAD', returnStdout: true
-    configuration.commitTag = gitRevParseHead.substring(0, 7).trim()
-    echo "commitTag = ${configuration.commitTag}"      
+    configuration.sharedSelenium          = configuration.sharedSelenium != null          ?    configuration.sharedSelenium          : (env.getProperty('SHARED_SELENIUM')              != null ? (env.getProperty('SHARED_SELENIUM')              == "true" ? true : false) : false)
+    configuration.skipRemoveAppIfNotProd  = configuration.skipRemoveAppIfNotProd != null  ?    configuration.skipRemoveAppIfNotProd  : (env.getProperty('SKIP_REMOVE_APP_IF_NOT_PROD')  != null ? (env.getProperty('SKIP_REMOVE_APP_IF_NOT_PROD')  == "true" ? true : false) : false)
+    configuration.skipRemoveTestPods      = configuration.skipRemoveTestPods != null      ?    configuration.skipRemoveTestPods      : (env.getProperty('SKIP_REMOVE_TEST_PODS')        != null ? (env.getProperty('SKIP_REMOVE_TEST_PODS')        == "true" ? true : false) : false)
+    configuration.showHelmTestLogs        = configuration.showHelmTestLogs != null        ?    configuration.showHelmTestLogs        : (env.getProperty('SHOW_HELM_TEST_LOGS')          != null ? (env.getProperty('SHOW_HELM_TEST_LOGS')          == "true" ? true : false) : true)
 
-    // set branchNameNormalized:
-    // - replaces '/' by '-' 
-    // - shortens branch name, if needed. In that case, add a 6 Byte hash
-    configuration.branchNameNormalized = env.BRANCH_NAME.toLowerCase().replaceAll('/','-')
-    if (configuration.branchNameNormalized.length() > 30) {
-        String digest = sh script: "echo ${env.BRANCH_NAME} | md5sum | cut -c1-6 | tr -d '\\n' | tr -d '\\r'", returnStdout: true
-        configuration.branchNameNormalized = configuration.branchNameNormalized.take(24) + '-' + digest
-        if (configuration.pipeline.debug) {
-            echo "digest = ${digest}"
-        }
-    }
-    echo "configuration.branchNameNormalized = ${configuration.branchNameNormalized}"
-    // configuration.branchNameNormalized = branchNameNormalized
+    // // set commitTag
+    // String gitRevParseHead = sh script: 'git rev-parse HEAD', returnStdout: true
+    // configuration.commitTag = gitRevParseHead.substring(0, 7).trim()
+    // echo "commitTag = ${configuration.commitTag}"      
+
+    // // set branchNameNormalized:
+    // // - replaces '/' by '-' 
+    // // - shortens branch name, if needed. In that case, add a 6 Byte hash
+    // configuration.branchNameNormalized = env.BRANCH_NAME.toLowerCase().replaceAll('/','-')
+    // if (configuration.branchNameNormalized.length() > 30) {
+    //     String digest = sh script: "echo ${env.BRANCH_NAME} | md5sum | cut -c1-6 | tr -d '\\n' | tr -d '\\r'", returnStdout: true
+    //     configuration.branchNameNormalized = configuration.branchNameNormalized.take(24) + '-' + digest
+    //     if (configuration.pipeline.debug) {
+    //         echo "digest = ${digest}"
+    //     }
+    // }
+    // echo "configuration.branchNameNormalized = ${configuration.branchNameNormalized}"
+    // // configuration.branchNameNormalized = branchNameNormalized
 
     // set appRelease:
     configuration.appRelease    = env.BRANCH_NAME == "prod" ? configuration.app.name : configuration.branchNameNormalized
@@ -108,7 +148,6 @@ def helmDebugInContainers(appRelease, appNamespace) {
         sh "kubectl -n ${appNamespace} get all || true"
     }
 }
-
 
 def helmDeploy(Map args) {
     //configure helm client and confirm tiller process is installed
