@@ -121,8 +121,8 @@ def helmDeploy(Map args) {
     // we had a problem with commit.sha values that have no alphabetic character (e.g. commit.sha=8880525 was translated to 8.880525e+06) 
     // this is fixed in https://github.com/helm/helm/issues/1707 by introducing the --set-string option.
     def String release_overrides_string = ""
-    if (args.set-string) {
-      release_overrides_string = getHelmReleaseOverrides(args.set-string)
+    if (args.set_string) {
+      release_overrides_string = getHelmReleaseOverrides(args.set_string)
     }
 
     def String namespace
