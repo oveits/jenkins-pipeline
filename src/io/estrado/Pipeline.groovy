@@ -3,7 +3,15 @@ package io.estrado;
 
 def enrichConfiguration(Map configuration) {
 
-    def normalizeName (Map args) {
+    def normalizeName(Map args) {
+        // normalizeName: 
+        // - replace '/' by '-', 
+        // - shorten, if longer maxLength (default 30)
+        //   - in that case, replace tail by a digest
+        // @args
+        // - String name
+        // - Integer maxLength (default 30)
+        // - Integer digestLength (default 6)
         if(args == null || args.name == null || args.name == "") {
             error "normalizeBranch(name:null) called?"
         }
@@ -16,7 +24,7 @@ def enrichConfiguration(Map configuration) {
         String normalizedBranch = args.name.toLowerCase().replaceAll('/','-')
         if (normalizedBranch.length() > args.maxLength) {
             String digest = sh script: "echo ${args.name} | md5sum | cut -c1-${args.digestLength} | tr -d '\\n' | tr -d '\\r'", returnStdout: true
-            normalizedBranch = normalizedBranch.take(args.maxLength - args.digestLength) + '-' + digest
+            normalizedBranch = normalizedBranch.take(args.maxLength - args.digestLength - 1) + '-' + digest
             if (configuration && configuration.pipeline && configuration.pipeline.debug) {
                 echo "digest = ${digest}"
             }
