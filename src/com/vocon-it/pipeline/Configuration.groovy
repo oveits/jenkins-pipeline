@@ -1,51 +1,49 @@
 #!/usr/bin/groovy
 package com.vocon-it.pipeline;
 
+def normalizeName(Map args) {
+    // normalizeName: 
+    // - replace '/' by '-', 
+    // - shorten, if longer maxLength (default 30)
+    //   - in that case, replace tail by a digest
+    // @args
+    // - String name
+    // - Integer maxLength (default 30)
+    // - Integer digestLength (default 6)
+    if(args == null || args.name == null || args.name == "") {
+        error "normalizeBranch(name:null) called?"
+    }
+    if(args.maxLength == null) {
+        args.maxLength = 30
+    }
+    if(args.digestLength == null) {
+        args.digestLength = 6
+    }
+    String normalizedBranch = args.name.toLowerCase().replaceAll('/','-')
+    if (normalizedBranch.length() > args.maxLength) {
+        String digest = sh script: "echo ${args.name} | md5sum | cut -c1-${args.digestLength} | tr -d '\\n' | tr -d '\\r'", returnStdout: true
+        normalizedBranch = normalizedBranch.take(args.maxLength - args.digestLength - 1) + '-' + digest
+        if (configuration && configuration.pipeline && configuration.pipeline.debug) {
+            echo "digest = ${digest}"
+        }
+    }
+    return normalizedBranch
+}
+
+def getGitCommitSha(Map args) {
+    if (args == null || args.length == null) {
+        args.length = 7
+    }
+    String gitRevParseHead = sh script: 'git rev-parse HEAD', returnStdout: true
+    if(args.length && args.length > 0 && args.length < gitRevParseHead.length()) {
+        gitRevParseHead = gitRevParseHead.substring(0, args.length).trim()
+    } else {
+        gitRevParseHead = gitRevParseHead.trim()
+    }
+    return gitRevParseHead
+}
+
 def setDefaults(Map configuration) {
-    // TODO: rename to setDefaults or only enrich
-
-    def normalizeName(Map args) {
-        // normalizeName: 
-        // - replace '/' by '-', 
-        // - shorten, if longer maxLength (default 30)
-        //   - in that case, replace tail by a digest
-        // @args
-        // - String name
-        // - Integer maxLength (default 30)
-        // - Integer digestLength (default 6)
-        if(args == null || args.name == null || args.name == "") {
-            error "normalizeBranch(name:null) called?"
-        }
-        if(args.maxLength == null) {
-            args.maxLength = 30
-        }
-        if(args.digestLength == null) {
-            args.digestLength = 6
-        }
-        String normalizedBranch = args.name.toLowerCase().replaceAll('/','-')
-        if (normalizedBranch.length() > args.maxLength) {
-            String digest = sh script: "echo ${args.name} | md5sum | cut -c1-${args.digestLength} | tr -d '\\n' | tr -d '\\r'", returnStdout: true
-            normalizedBranch = normalizedBranch.take(args.maxLength - args.digestLength - 1) + '-' + digest
-            if (configuration && configuration.pipeline && configuration.pipeline.debug) {
-                echo "digest = ${digest}"
-            }
-        }
-        return normalizedBranch
-    }
-
-    def getGitCommitSha(Map args) {
-        if (args == null || args.length == null) {
-            args.length = 7
-        }
-        String gitRevParseHead = sh script: 'git rev-parse HEAD', returnStdout: true
-        if(args.length && args.length > 0 && args.length < gitRevParseHead.length()) {
-            gitRevParseHead = gitRevParseHead.substring(0, args.length).trim()
-        } else {
-            gitRevParseHead = gitRevParseHead.trim()
-        }
-        return gitRevParseHead
-    }
-
     // DEFAULTS
     configuration.app                     = configuration.app != null                    ?    configuration.app                      : [:]
     configuration.alwaysPerformTests      = configuration.alwaysPerformTests != null     ?    configuration.alwaysPerformTests       : (env.getProperty('ALWAYS_PERFORM_TESTS')         != null ? (env.getProperty('ALWAYS_PERFORM_TESTS')         == "true" ? true : false) : false)
