@@ -23,7 +23,7 @@ def normalizeName(Map args) {
     if (normalizedBranch.length() > args.maxLength) {
         String digest = sh script: "echo ${args.name} | md5sum | cut -c1-${args.digestLength} | tr -d '\\n' | tr -d '\\r'", returnStdout: true
         normalizedBranch = normalizedBranch.take(args.maxLength - args.digestLength - 1) + '-' + digest
-        if (configuration && configuration.pipeline && configuration.pipeline.debug) {
+        if (args && args.pipeline && args.pipeline.debug) {
             echo "digest = ${digest}"
         }
     }
