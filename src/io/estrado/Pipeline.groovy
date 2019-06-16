@@ -43,25 +43,29 @@ def getGitCommitSha(Map args) {
     return gitRevParseHead
 }
 
-// from https://stackoverflow.com/questions/13155127/deep-copy-map-in-groovy:
-@NonCPS
-def deepCopy(orig) {
-     bos = new ByteArrayOutputStream()
-     oos = new ObjectOutputStream(bos)
-     oos.writeObject(orig); oos.flush()
-     bin = new ByteArrayInputStream(bos.toByteArray())
-     ois = new ObjectInputStream(bin)
-     return ois.readObject()
-}
+// // from https://stackoverflow.com/questions/13155127/deep-copy-map-in-groovy:
+// OV does not work: I get an exception "Caused: java.io.NotSerializableException: java.io.ByteArrayOutputStream"
+// @NonCPS
+// def deepCopy(orig) {
+//      bos = new ByteArrayOutputStream()
+//      oos = new ObjectOutputStream(bos)
+//      oos.writeObject(orig); oos.flush()
+//      bin = new ByteArrayInputStream(bos.toByteArray())
+//      ois = new ObjectInputStream(bin)
+//      return ois.readObject()
+// }
 
 def setDefaults(Map args) {
-    // Do not change the input. For that, perform a deepCopy:
-    def myArgs
+    // deepCopy does not work. Therefore, the input Map will be changed by this function
+    def myArgs = args
     if (args == null) {
         myArgs = [:]
     } else {
-        myArgs = deepCopy(args)
+        myArgs = args
     }
+    // else {
+    //     myArgs = deepCopy(args)
+    // }
 
     // DEFAULTS
     myArgs.app                     = myArgs.app != null                    ?    myArgs.app                      : [:]
