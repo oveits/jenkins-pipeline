@@ -43,65 +43,85 @@ def getGitCommitSha(Map args) {
     return gitRevParseHead
 }
 
-def enrichConfiguration(Map configuration) {
+// from https://stackoverflow.com/questions/13155127/deep-copy-map-in-groovy:
+@NonCPS
+def deepCopy(orig) {
+     bos = new ByteArrayOutputStream()
+     oos = new ObjectOutputStream(bos)
+     oos.writeObject(orig); oos.flush()
+     bin = new ByteArrayInputStream(bos.toByteArray())
+     ois = new ObjectInputStream(bin)
+     return ois.readObject()
+}
+
+def setDefaults(Map args) {
+    // Do not change the input. For that, perform a deepCopy:
+    def myArgs
+    if (args == null) {
+        myArgs = [:]
+    } else {
+        myArgs = deepCopy(args)
+    }
+
     // DEFAULTS
-    configuration.app                     = configuration.app != null                    ?    configuration.app                      : [:]
-    configuration.alwaysPerformTests      = configuration.alwaysPerformTests != null     ?    configuration.alwaysPerformTests       : (env.getProperty('ALWAYS_PERFORM_TESTS')         != null ? (env.getProperty('ALWAYS_PERFORM_TESTS')         == "true" ? true : false) : false)
+    myArgs.app                     = myArgs.app != null                    ?    myArgs.app                      : [:]
+    myArgs.alwaysPerformTests      = myArgs.alwaysPerformTests != null     ?    myArgs.alwaysPerformTests       : (env.getProperty('ALWAYS_PERFORM_TESTS')         != null ? (env.getProperty('ALWAYS_PERFORM_TESTS')         == "true" ? true : false) : false)
     
-    configuration.branchNameNormalized    = normalizeName(name:env.BRANCH_NAME, maxLength:30, digestLength:6)
+    myArgs.branchNameNormalized    = normalizeName(name:env.BRANCH_NAME, maxLength:30, digestLength:6)
     
-    configuration.commitTag               = getGitCommitSha(length:7)
+    myArgs.commitTag               = getGitCommitSha(length:7)
 
-    configuration.debug                   = configuration.debug != null                   ?    configuration.debug                   : [:]
-    configuration.debug.helmStatus        = configuration.debug.helmStatus != null        ?    configuration.debug.helmStatus        : (env.getProperty('DEBUG_HELM_STATUS')            != null ? (env.getProperty('DEBUG_HELM_STATUS')            == "true" ? true : false) : false)
-    configuration.debug.envVars           = configuration.debug.envVars != null           ?    configuration.debug.envVars           : (env.getProperty('DEBUG_ENV_VARS')               != null ? (env.getProperty('DEBUG_ENV_VARS')            == "true" ? true : false) : false)
-    configuration.debugPipeline           = configuration.debugPipeline != null           ?    configuration.debugPipeline           : (env.getProperty('DEBUG_PIPELINE')               != null ? (env.getProperty('DEBUG_PIPELINE')               == "true" ? true : false) : false)
+    myArgs.debug                   = myArgs.debug != null                   ?    myArgs.debug                   : [:]
+    myArgs.debug.helmStatus        = myArgs.debug.helmStatus != null        ?    myArgs.debug.helmStatus        : (env.getProperty('DEBUG_HELM_STATUS')            != null ? (env.getProperty('DEBUG_HELM_STATUS')            == "true" ? true : false) : false)
+    myArgs.debug.envVars           = myArgs.debug.envVars != null           ?    myArgs.debug.envVars           : (env.getProperty('DEBUG_ENV_VARS')               != null ? (env.getProperty('DEBUG_ENV_VARS')            == "true" ? true : false) : false)
+    myArgs.debugPipeline           = myArgs.debugPipeline != null           ?    myArgs.debugPipeline           : (env.getProperty('DEBUG_PIPELINE')               != null ? (env.getProperty('DEBUG_PIPELINE')               == "true" ? true : false) : false)
     
-    configuration.helmTestRetry           = configuration.helmTestRetry != null           ?    configuration.helmTestRetry           : (env.getProperty('HELM_TEST_RETRY')              != null ? env.getProperty('HELM_TEST_RETRY').toInteger()                        : 0)
+    myArgs.helmTestRetry           = myArgs.helmTestRetry != null           ?    myArgs.helmTestRetry           : (env.getProperty('HELM_TEST_RETRY')              != null ? env.getProperty('HELM_TEST_RETRY').toInteger()                        : 0)
 
-    configuration.sharedSelenium          = configuration.sharedSelenium != null          ?    configuration.sharedSelenium          : (env.getProperty('SHARED_SELENIUM')              != null ? (env.getProperty('SHARED_SELENIUM')              == "true" ? true : false) : false)
-    configuration.skipRemoveAppIfNotProd  = configuration.skipRemoveAppIfNotProd != null  ?    configuration.skipRemoveAppIfNotProd  : (env.getProperty('SKIP_REMOVE_APP_IF_NOT_PROD')  != null ? (env.getProperty('SKIP_REMOVE_APP_IF_NOT_PROD')  == "true" ? true : false) : false)
-    configuration.skipRemoveTestPods      = configuration.skipRemoveTestPods != null      ?    configuration.skipRemoveTestPods      : (env.getProperty('SKIP_REMOVE_TEST_PODS')        != null ? (env.getProperty('SKIP_REMOVE_TEST_PODS')        == "true" ? true : false) : false)
-    configuration.showHelmTestLogs        = configuration.showHelmTestLogs != null        ?    configuration.showHelmTestLogs        : (env.getProperty('SHOW_HELM_TEST_LOGS')          != null ? (env.getProperty('SHOW_HELM_TEST_LOGS')          == "true" ? true : false) : true)
+    myArgs.sharedSelenium          = myArgs.sharedSelenium != null          ?    myArgs.sharedSelenium          : (env.getProperty('SHARED_SELENIUM')              != null ? (env.getProperty('SHARED_SELENIUM')              == "true" ? true : false) : false)
+    myArgs.skipRemoveAppIfNotProd  = myArgs.skipRemoveAppIfNotProd != null  ?    myArgs.skipRemoveAppIfNotProd  : (env.getProperty('SKIP_REMOVE_APP_IF_NOT_PROD')  != null ? (env.getProperty('SKIP_REMOVE_APP_IF_NOT_PROD')  == "true" ? true : false) : false)
+    myArgs.skipRemoveTestPods      = myArgs.skipRemoveTestPods != null      ?    myArgs.skipRemoveTestPods      : (env.getProperty('SKIP_REMOVE_TEST_PODS')        != null ? (env.getProperty('SKIP_REMOVE_TEST_PODS')        == "true" ? true : false) : false)
+    myArgs.showHelmTestLogs        = myArgs.showHelmTestLogs != null        ?    myArgs.showHelmTestLogs        : (env.getProperty('SHOW_HELM_TEST_LOGS')          != null ? (env.getProperty('SHOW_HELM_TEST_LOGS')          == "true" ? true : false) : true)
 
     // set appRelease:
-    configuration.appRelease    = env.BRANCH_NAME == "prod" ? configuration.app.name : configuration.branchNameNormalized
-    configuration.appNamespace  = env.BRANCH_NAME == "prod" ? configuration.app.name : configuration.branchNameNormalized
-    configuration.skipRemoveApp = env.BRANCH_NAME == "prod" ? true                   : configuration.skipRemoveAppIfNotProd
+    myArgs.appRelease    = env.BRANCH_NAME == "prod" ? myArgs.app.name : myArgs.branchNameNormalized
+    myArgs.appNamespace  = env.BRANCH_NAME == "prod" ? myArgs.app.name : myArgs.branchNameNormalized
+    myArgs.skipRemoveApp = env.BRANCH_NAME == "prod" ? true                   : myArgs.skipRemoveAppIfNotProd
 
-    // Set Selenium configuration
-    configuration.seleniumRelease       = configuration.sharedSelenium == true      ?    'selenium'   : (configuration.appRelease + '-selenium')
-    configuration.seleniumNamespace     = configuration.sharedSelenium == true      ?    'selenium'   : configuration.appNamespace
+    // Set Selenium myArgs
+    myArgs.seleniumRelease       = myArgs.sharedSelenium == true      ?    'selenium'   : (myArgs.appRelease + '-selenium')
+    myArgs.seleniumNamespace     = myArgs.sharedSelenium == true      ?    'selenium'   : myArgs.appNamespace
 
     // set additional git envvars for image tagging
     gitEnvVars()
 
     // If pipeline debugging enabled
-    if (configuration.debug.envVars) {
+    if (myArgs.debug.envVars) {
         println "DEBUGGING of ENV VARS ENABLED"
         sh "env | sort"
     }
 
-    configuration.acct                  = getContainerRepoAcct(configuration)
-    configuration.image_tags_list       = getMapValues(getContainerTags(configuration))
+    myArgs.acct                  = getContainerRepoAcct(myArgs)
+    myArgs.image_tags_list       = getMapValues(getContainerTags(myArgs))
 
-    echo "configuration.image_tags_list = ${configuration.image_tags_list}"
+    echo "myArgs.image_tags_list = ${myArgs.image_tags_list}"
 
-    configuration.app.programmingLanguage   = configuration.app.programmingLanguage != null     ?    configuration.app.programmingLanguage       : (env.getProperty('PROGRAMMING_LANGUAGE')         != null ? env.getProperty('PROGRAMMING_LANGUAGE') : "programming_language_not_found")
+    myArgs.app.programmingLanguage   = myArgs.app.programmingLanguage != null     ?    myArgs.app.programmingLanguage       : (env.getProperty('PROGRAMMING_LANGUAGE')         != null ? env.getProperty('PROGRAMMING_LANGUAGE') : "programming_language_not_found")
 
-    switch(configuration.app.programmingLanguage) {
+    switch(myArgs.app.programmingLanguage) {
         case ~/golang/:
-            configuration.unitTestCommandDefault = "go test -v -race ./..."
-            configuration.buildCommandDefault    = "make bootstrap build"
+            myArgs.unitTestCommandDefault = "go test -v -race ./..."
+            myArgs.buildCommandDefault    = "make bootstrap build"
         break
         default:
-            configuration.unitTestCommandDefault = "unitTest: unsupported programmingLanguage"
-            configuration.buildCommandDefault    = "build: unsupported programmingLanguage"
+            myArgs.unitTestCommandDefault = "unitTest: unsupported programmingLanguage"
+            myArgs.buildCommandDefault    = "build: unsupported programmingLanguage"
     }
 
-    configuration.unitTestCommand   = configuration.unitTestCommand != null     ?    configuration.unitTestCommand       : configuration.unitTestCommandDefault
-    configuration.buildCommand      = configuration.buildCommand    != null     ?    configuration.buildCommand          : configuration.buildCommandDefault
+    myArgs.unitTestCommand   = myArgs.unitTestCommand != null     ?    myArgs.unitTestCommand       : myArgs.unitTestCommandDefault
+    myArgs.buildCommand      = myArgs.buildCommand    != null     ?    myArgs.buildCommand          : myArgs.buildCommandDefault
 
+    return myArgs
 }
 
 def kubectlTest() {
