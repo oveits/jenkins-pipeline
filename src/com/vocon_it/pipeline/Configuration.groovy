@@ -179,6 +179,20 @@ def getContainerTags(config, Map tags = [:]) {
     return tags
 }
 
+def getContainerRepoAcct(config) {
+
+    println "setting container registry creds according to Jenkinsfile.json"
+    def String acct
+
+    if (env.BRANCH_NAME == 'master') {
+        acct = config.container_repo.master_acct
+    } else {
+        acct = config.container_repo.alt_acct
+    }
+
+    return acct
+}
+
 @NonCPS
 def getMapValues(Map map=[:]) {
     // jenkins and workflow restriction force this function instead of map.values(): https://issues.jenkins-ci.org/browse/JENKINS-27421
