@@ -30,19 +30,6 @@ def normalizeName(Map args) {
     return normalizedBranch
 }
 
-def getGitCommitSha(Map args) {
-    if (args == null || args.length == null) {
-        args.length = 7
-    }
-    String gitRevParseHead = sh script: 'git rev-parse HEAD', returnStdout: true
-    if(args.length && args.length > 0 && args.length < gitRevParseHead.length()) {
-        gitRevParseHead = gitRevParseHead.substring(0, args.length).trim()
-    } else {
-        gitRevParseHead = gitRevParseHead.trim()
-    }
-    return gitRevParseHead
-}
-
 def setDefaults(Map configuration) {
     // DEFAULTS
     configuration.app                     = configuration.app != null                    ?    configuration.app                      : [:]
@@ -74,7 +61,8 @@ def setDefaults(Map configuration) {
     configuration.seleniumNamespace     = configuration.sharedSelenium == true      ?    'selenium'   : configuration.appNamespace
 
     // set additional git envvars for image tagging
-    gitEnvVars()
+    env.GIT_SHA = gitCommitSha()
+    // gitEnvVars()
 
     // If pipeline debugging enabled
     if (configuration.debug.envVars) {
@@ -105,27 +93,46 @@ def setDefaults(Map configuration) {
     return configuration
 }
 
-def gitEnvVars() {
-    // create git envvars
-    println "Setting envvars to tag container"
+// def getGitCommitSha(Map args) {
+//     if (args == null || args.length == null) {
+//         args.length = 7
+//     }
+//     String gitRevParseHead = sh script: 'git rev-parse HEAD', returnStdout: true
+//     if(args.length && args.length > 0 && args.length < gitRevParseHead.length()) {
+//         gitRevParseHead = gitRevParseHead.substring(0, args.length).trim()
+//     } else {
+//         gitRevParseHead = gitRevParseHead.trim()
+//     }
+//     return gitRevParseHead
+// }
 
-    sh 'git rev-parse HEAD > git_commit_id.txt'
-    try {
-        env.GIT_COMMIT_ID = readFile('git_commit_id.txt').trim()
-        env.GIT_SHA = env.GIT_COMMIT_ID.substring(0, 7)
-    } catch (e) {
-        error "${e}"
-    }
-    println "env.GIT_COMMIT_ID ==> ${env.GIT_COMMIT_ID}"
-
-    sh 'git config --get remote.origin.url> git_remote_origin_url.txt'
-    try {
-        env.GIT_REMOTE_URL = readFile('git_remote_origin_url.txt').trim()
-    } catch (e) {
-        error "${e}"
-    }
-    println "env.GIT_REMOTE_URL ==> ${env.GIT_REMOTE_URL}"
+def gitCommitSha(Map args) {
+    String shortOption = ( args == null || args.short == true ) ? ' --short' : ''
+    String gitCommitSha = sh script: "git rev-parse ${shortOption} HEAD", returnStdout: true
+    return gitCommitSha
 }
+
+// def gitEnvVars() {
+//     // create git envvars
+//     println "Setting envvars to tag container"
+
+//     sh 'git rev-parse HEAD > git_commit_id.txt'
+//     try {
+//         env.GIT_COMMIT_ID = readFile('git_commit_id.txt').trim()
+//         env.GIT_SHA = env.GIT_COMMIT_ID.substring(0, 7)
+//     } catch (e) {
+//         error "${e}"
+//     }
+//     println "env.GIT_COMMIT_ID ==> ${env.GIT_COMMIT_ID}"
+
+//     sh 'git config --get remote.origin.url> git_remote_origin_url.txt'
+//     try {
+//         env.GIT_REMOTE_URL = readFile('git_remote_origin_url.txt').trim()
+//     } catch (e) {
+//         error "${e}"
+//     }
+//     println "env.GIT_REMOTE_URL ==> ${env.GIT_REMOTE_URL}"
+// }
 
 
 def getContainerTags(config, Map tags = [:]) {
@@ -149,9 +156,9 @@ def getContainerTags(config, Map tags = [:]) {
     try {
         // if branch available, use as prefix, otherwise only commit hash
         if (env.BRANCH_NAME) {
-            commit_tag = env.BRANCH_NAME.replaceAll('/','-') + '-' + env.GIT_COMMIT_ID.substring(0, 7)
+            commit_tag = env.BRANCH_NAME.replaceAll('/','-') + '-' + gitCommitSha()
         } else {
-            commit_tag = env.GIT_COMMIT_ID.substring(0, 7)
+            commit_tag = gitCommitSha()
         }
         tags << ['commit': commit_tag]
     } catch (Exception e) {
