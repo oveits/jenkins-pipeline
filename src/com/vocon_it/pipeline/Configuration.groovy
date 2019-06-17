@@ -111,7 +111,7 @@ def gitCommitSha(Map args = null) {
     // - Boolean short = true
     String shortOption = ( args == null || args.short == true ) ? ' --short' : ''
     String gitCommitSha = sh script: "git rev-parse ${shortOption} HEAD", returnStdout: true
-    return gitCommitSha
+    return gitCommitSha.trim()
 }
 
 // def gitEnvVars() {
