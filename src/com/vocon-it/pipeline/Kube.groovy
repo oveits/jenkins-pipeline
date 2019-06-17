@@ -1,7 +1,7 @@
 #!/usr/bin/groovy
 package com.vocon-it.pipeline;
 
-def testConnectivity() {
+def getNodes() {
     // Test that kubectl can correctly communication with the Kubernetes API
     println "checking kubectl connnectivity to the API"
     sh "kubectl get nodes"
