@@ -106,7 +106,7 @@ def setDefaults(Map configuration) {
 //     return gitRevParseHead
 // }
 
-def gitCommitSha(Map args) {
+def gitCommitSha(Map args = null) {
     // @args
     // - Boolean short = true
     String shortOption = ( args == null || args.short == true ) ? ' --short' : ''
