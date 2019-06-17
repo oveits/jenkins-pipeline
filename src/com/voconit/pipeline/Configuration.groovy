@@ -23,7 +23,7 @@ def normalizeName(Map args) {
     if (normalizedBranch.length() > args.maxLength) {
         String digest = sh script: "echo ${args.name} | md5sum | cut -c1-${args.digestLength} | tr -d '\\n' | tr -d '\\r'", returnStdout: true
         normalizedBranch = normalizedBranch.take(args.maxLength - args.digestLength - 1) + '-' + digest
-        if (configuration && configuration.pipeline && configuration.pipeline.debug) {
+        if (args && args.debug) {
             echo "digest = ${digest}"
         }
     }
@@ -48,7 +48,7 @@ def setDefaults(Map configuration) {
     configuration.app                     = configuration.app != null                    ?    configuration.app                      : [:]
     configuration.alwaysPerformTests      = configuration.alwaysPerformTests != null     ?    configuration.alwaysPerformTests       : (env.getProperty('ALWAYS_PERFORM_TESTS')         != null ? (env.getProperty('ALWAYS_PERFORM_TESTS')         == "true" ? true : false) : false)
     
-    configuration.branchNameNormalized    = normalizeName(name:env.BRANCH_NAME, maxLength:30, digestLength:6)
+    configuration.branchNameNormalized    = normalizeName(name:env.BRANCH_NAME, maxLength:30, digestLength:6, debug:false)
     
     configuration.commitTag               = getGitCommitSha(length:7)
 
