@@ -16,20 +16,9 @@ def init() {
     sh "helm version"
 }
 
-def debugInContainers(appRelease, appNamespace) {
-    container('helm') {
-        helmStatus = pipeline.helmStatus(
-            name    : appRelease
-        )
-    }
-    container('kubectl') {
-        sh "kubectl -n ${appNamespace} get all || true"
-    }
-}
-
 def deploy(Map args) {
     //configure helm client and confirm tiller process is installed
-    helmInit()
+    init()
     def String release_overrides = ""
     if (args.set) {
       release_overrides = getHelmReleaseOverrides(args.set)
@@ -79,12 +68,12 @@ def test(Map args) {
 
 def status(Map args) {
     // get helm status
-    def helmStatusText = sh script: "helm status ${args.name} -o json || true", returnStdout: true
-    echo helmStatusText
+    def statusText = sh script: "helm status ${args.name} -o json || true", returnStdout: true
+    echo statusText
 
-    if(helmStatusText != null && helmStatusText != "") {
-        def helmStatus = readJSON text: helmStatusText
-        return helmStatus
+    if(statusText != null && statusText != "") {
+        def status = readJSON text: statusText
+        return status
     }
     // else
     return null
