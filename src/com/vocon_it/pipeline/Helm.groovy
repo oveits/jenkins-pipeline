@@ -1,5 +1,5 @@
 #!/usr/bin/groovy
-package com.voconit.pipeline;
+package com.vocon_it.pipeline;
 
 def lint(String chart_dir) {
     // lint helm chart

@@ -1,5 +1,5 @@
 #!/usr/bin/groovy
-package com.voconit.pipeline;
+package com.vocon_it.pipeline;
 
 def buildAndPublish(Map args) {
 

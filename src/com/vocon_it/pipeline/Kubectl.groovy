@@ -1,5 +1,5 @@
 #!/usr/bin/groovy
-package com.voconit.pipeline;
+package com.vocon_it.pipeline;
 
 def getNodes() {
     // Test that kubectl can correctly communication with the Kubernetes API
