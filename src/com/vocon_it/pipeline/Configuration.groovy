@@ -61,7 +61,7 @@ def setDefaults(Map configuration) {
     configuration.seleniumNamespace     = configuration.sharedSelenium == true      ?    'selenium'   : configuration.appNamespace
 
     // set additional git envvars for image tagging
-    env.GIT_SHA = gitCommitSha()
+    env.GIT_SHA = gitCommitSha(short:true)
     // gitEnvVars()
 
     // If pipeline debugging enabled
