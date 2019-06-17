@@ -102,6 +102,7 @@ def setDefaults(Map configuration) {
     configuration.unitTestCommand   = configuration.unitTestCommand != null     ?    configuration.unitTestCommand       : configuration.unitTestCommandDefault
     configuration.buildCommand      = configuration.buildCommand    != null     ?    configuration.buildCommand          : configuration.buildCommandDefault
 
+    return configuration
 }
 
 def gitEnvVars() {
