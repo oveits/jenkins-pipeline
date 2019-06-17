@@ -37,7 +37,7 @@ def setDefaults(Map configuration) {
     
     configuration.branchNameNormalized    = normalizeName(name:env.BRANCH_NAME, maxLength:30, digestLength:6, debug:false)
     
-    configuration.commitTag               = getGitCommitSha(length:7)
+    configuration.commitTag               = gitCommitSha(short:true)
 
     configuration.debug                   = configuration.debug != null                   ?    configuration.debug                   : [:]
     configuration.debug.helmStatus        = configuration.debug.helmStatus != null        ?    configuration.debug.helmStatus        : (env.getProperty('DEBUG_HELM_STATUS')            != null ? (env.getProperty('DEBUG_HELM_STATUS')            == "true" ? true : false) : false)
@@ -107,6 +107,8 @@ def setDefaults(Map configuration) {
 // }
 
 def gitCommitSha(Map args) {
+    // @args
+    // - Boolean short = true
     String shortOption = ( args == null || args.short == true ) ? ' --short' : ''
     String gitCommitSha = sh script: "git rev-parse ${shortOption} HEAD", returnStdout: true
     return gitCommitSha
