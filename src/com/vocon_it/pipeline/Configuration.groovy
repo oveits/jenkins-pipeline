@@ -1,8 +1,8 @@
 #!/usr/bin/groovy
 package com.vocon_it.pipeline;
 
-def normalizeName(Map args) {
-    // normalizeName: 
+def normalizedName(Map args) {
+    // normalizedName: 
     // - replace '/' by '-', 
     // - shorten, if longer maxLength (default 30)
     //   - in that case, replace tail by a digest
@@ -11,7 +11,7 @@ def normalizeName(Map args) {
     // - Integer maxLength (default 30)
     // - Integer digestLength (default 6)
     if(args == null || args.name == null || args.name == "") {
-        error "normalizeBranch(name:null) called?"
+        error "normalizedName(name:null) called?"
     }
     if(args.maxLength == null) {
         args.maxLength = 30
@@ -19,15 +19,15 @@ def normalizeName(Map args) {
     if(args.digestLength == null) {
         args.digestLength = 6
     }
-    String normalizedBranch = args.name.toLowerCase().replaceAll('/','-')
-    if (normalizedBranch.length() > args.maxLength) {
+    String normalizedName = args.name.toLowerCase().replaceAll('/','-')
+    if (normalizedName.length() > args.maxLength) {
         String digest = sh script: "echo ${args.name} | md5sum | cut -c1-${args.digestLength} | tr -d '\\n' | tr -d '\\r'", returnStdout: true
-        normalizedBranch = normalizedBranch.take(args.maxLength - args.digestLength - 1) + '-' + digest
+        normalizedName = normalizedName.take(args.maxLength - args.digestLength - 1) + '-' + digest
         if (args && args.debug) {
             echo "digest = ${digest}"
         }
     }
-    return normalizedBranch
+    return normalizedName
 }
 
 def setDefaults(Map configuration) {
@@ -35,7 +35,7 @@ def setDefaults(Map configuration) {
     configuration.app                     = configuration.app != null                    ?    configuration.app                      : [:]
     configuration.alwaysPerformTests      = configuration.alwaysPerformTests != null     ?    configuration.alwaysPerformTests       : (env.getProperty('ALWAYS_PERFORM_TESTS')         != null ? (env.getProperty('ALWAYS_PERFORM_TESTS')         == "true" ? true : false) : false)
     
-    configuration.branchNameNormalized    = normalizeName(name:env.BRANCH_NAME, maxLength:30, digestLength:6, debug:false)
+    configuration.branchNameNormalized    = normalizedName(name:env.BRANCH_NAME, maxLength:30, digestLength:6, debug:false)
     
     configuration.commitTag               = gitCommitSha(short:true)
 
