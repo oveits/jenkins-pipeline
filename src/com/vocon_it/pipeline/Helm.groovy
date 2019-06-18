@@ -55,9 +55,9 @@ def deploy(Map args) {
 }
 
 def delete(Map args) {
-        println "Running helm delete ${args.name}"
+    println "Running helm delete ${args.name}"
 
-        sh "helm delete ${args.name} --purge"
+    sh "helm delete ${args.name} --purge"
 }
 
 def test(Map args) {
