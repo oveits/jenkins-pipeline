@@ -15,3 +15,17 @@ def getAll(String namespace, Boolean ignoreErrors) {
         sh "kubectl -n ${namespace} get all"
     }  
 }
+
+def deleteObsoletePods(Map args) {
+    if(args?.namespace) {
+        String namespace = args.namespace
+        sh """
+        PODS=\$(kubectl -n ${namespace} get pods | grep 'Completed\\|Error' | awk '{print \$1}')
+        if [ "\$PODS" != "" ]; then
+            echo \$PODS | xargs -n 1 kubectl -n ${namespace} delete pod
+        else
+            echo "no completed PODs found; continuing"
+        fi
+        """
+    }
+}
